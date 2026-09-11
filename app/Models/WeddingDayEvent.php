@@ -24,15 +24,6 @@ class WeddingDayEvent extends Model
         'end_time',
         'is_music_or_dancing',
         'dress_code',
-        'venue_name',
-        'address_line_1',
-        'address_line_2',
-        'city',
-        'state',
-        'country',
-        'post_code',
-        'latitude',
-        'longitude',
         'sort_order',
     ];
 

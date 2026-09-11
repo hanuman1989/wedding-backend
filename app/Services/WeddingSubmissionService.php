@@ -37,8 +37,15 @@ class WeddingSubmissionService
         $errors = [];
         $creators = $wedding->creators->keyBy('creator_type');
 
-        if (! $creators->has($wedding->creator_type)) {
-            $errors['creator'] = 'Step 1 creator details are required.';
+        foreach ([
+            'first_name' => 'Wedding first name is required.',
+            'last_name' => 'Wedding last name is required.',
+            'email' => 'Wedding email is required.',
+            'phone' => 'Wedding phone is required.',
+        ] as $attribute => $message) {
+            if (blank($wedding->{$attribute})) {
+                $errors[$attribute] = $message;
+            }
         }
 
         $requiredPartnerTypes = match ($wedding->creator_type) {
@@ -49,7 +56,16 @@ class WeddingSubmissionService
 
         foreach ($requiredPartnerTypes as $creatorType) {
             if (! $creators->has($creatorType)) {
-                $errors[$creatorType] = ucfirst($creatorType).' details are required.';
+                $errors[$creatorType] = ucfirst($creatorType).' creator details are required.';
+            }
+        }
+
+        foreach ($creators as $creatorType => $creator) {
+            foreach (['first_name', 'last_name', 'email', 'phone'] as $attribute) {
+                if (blank($creator->{$attribute})) {
+                    $errors["{$creatorType}.{$attribute}"] = ucfirst(str_replace('_', ' ', $attribute))
+                        .' is required.';
+                }
             }
         }
 
@@ -65,20 +81,28 @@ class WeddingSubmissionService
             $errors['food_observance'] = 'Food observance is required.';
         }
 
-        if ($wedding->is_alcohol_offered === null) {
-            $errors['is_alcohol_offered'] = 'Alcohol availability is required.';
-        }
-
-        if (! is_array($wedding->main_languages) || $wedding->main_languages === []) {
-            $errors['main_languages'] = 'At least one main language is required.';
-        }
-
         if ($wedding->number_of_days !== null && $wedding->days->count() !== $wedding->number_of_days) {
             $errors['days'] = 'Wedding day details are incomplete.';
         }
 
-        if ($wedding->days->contains(fn ($day) => $day->events->isEmpty())) {
-            $errors['events'] = 'Each wedding day requires at least one event.';
+        foreach ($wedding->days as $dayIndex => $day) {
+            if (blank($day->wedding_day_date)) {
+                $errors["wedding_days.{$dayIndex}.wedding_day_date"] = 'The wedding day date is required.';
+            }
+
+            if (blank($day->city)) {
+                $errors["wedding_days.{$dayIndex}.city"] = 'The wedding day city is required.';
+            }
+
+            if ($day->events->isEmpty()) {
+                $errors["wedding_days.{$dayIndex}.wedding_day_events"] = 'Each wedding day requires at least one event.';
+            }
+
+            foreach ($day->events as $eventIndex => $event) {
+                if (blank($event->title)) {
+                    $errors["wedding_days.{$dayIndex}.wedding_day_events.{$eventIndex}.title"] = 'The event title is required.';
+                }
+            }
         }
 
         if (! $wedding->images()->exists()) {

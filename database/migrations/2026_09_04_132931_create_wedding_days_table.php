@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('wedding_days', function (Blueprint $table) {
             $table->id();
             $table->foreignId('wedding_id')->constrained()->cascadeOnDelete();
-            $table->unsignedTinyInteger('day_number');
             $table->date('wedding_day_date')->index();
+            $table->time('wedding_day_time')->nullable()->index();
             $table->string('address_line_1', 255)->nullable();
             $table->string('address_line_2', 255)->nullable();
             $table->string('city', 100);
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamps();
 
-            $table->unique(['wedding_id', 'day_number']);
+            $table->unique(['wedding_id']);
         });
     }
 

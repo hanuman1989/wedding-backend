@@ -18,10 +18,7 @@ class WeddingImageController extends Controller
 {
     public function store(UploadWeddingImagesRequest $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('update', $wedding);
-
         $storedPaths = [];
-
         try {
             $images = DB::transaction(function () use ($request, $wedding, &$storedPaths) {
                 $nextSortOrder = ((int) ($wedding->images()->max('sort_order') ?? -1)) + 1;
@@ -66,7 +63,6 @@ class WeddingImageController extends Controller
 
     public function destroy(Wedding $wedding, WeddingImage $image): JsonResponse
     {
-        $this->authorize('update', $wedding);
         abort_unless($image->wedding_id === $wedding->id, 404);
 
         if (! Storage::disk($image->disk)->delete($image->image)) {
@@ -75,7 +71,6 @@ class WeddingImageController extends Controller
 
         DB::transaction(function () use ($wedding, $image): void {
             $image->delete();
-
             $wedding->images()->get()->each(
                 fn (WeddingImage $remainingImage, int $sortOrder) => $remainingImage->update([
                     'sort_order' => $sortOrder,
@@ -92,15 +87,13 @@ class WeddingImageController extends Controller
 
     public function reorder(ReorderWeddingImagesRequest $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('update', $wedding);
-
         $images = DB::transaction(function () use ($request, $wedding) {
             $validated = $request->validated();
-            $imageIds = collect($validated['images'])->pluck('id')->all();
+            $imageIds = $validated['image_ids'];
 
             if (count($imageIds) !== $wedding->images()->count()) {
                 throw ValidationException::withMessages([
-                    'images' => 'Provide every wedding image when reordering.',
+                    'image_ids' => 'Provide every wedding image when reordering.',
                 ]);
             }
 
@@ -108,10 +101,10 @@ class WeddingImageController extends Controller
 
             abort_unless($images->count() === count($imageIds), 404);
 
-            foreach ($validated['images'] as $imagePayload) {
+            foreach ($imageIds as $sortOrder => $imageId) {
                 $wedding->images()
-                    ->whereKey($imagePayload['id'])
-                    ->update(['sort_order' => $imagePayload['sort_order']]);
+                    ->whereKey($imageId)
+                    ->update(['sort_order' => $sortOrder]);
             }
 
             return $wedding->images()->get();

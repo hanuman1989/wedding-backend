@@ -19,57 +19,28 @@ class WeddingDetailsSynchronizer
                 'number_of_days',
                 'food_observance',
                 'is_alcohol_offered',
-                'main_languages',
             ]));
 
-            $submittedDayIds = [];
-
-            foreach ($attributes['days'] as $dayPayload) {
+            foreach ($attributes['wedding_days'] as $dayPayload) {
                 $weddingDay = $this->saveDay($wedding, $dayPayload);
-                $submittedDayIds[] = $weddingDay->id;
 
-                $submittedEventIds = [];
+                foreach ($dayPayload['wedding_day_events'] as $eventPayload) {
+                    $eventData = [
+                        'title' => $eventPayload['title'],
+                        'description' => $eventPayload['description'],
+                        'is_music_or_dancing' => $eventPayload['is_music_or_dancing'] ?? null,
+                        'dress_code' => $eventPayload['dress_code'],
+                    ];
 
-                foreach ($dayPayload['events'] as $eventIndex => $eventPayload) {
-                    $eventAttributes = Arr::only($eventPayload, [
-                        'title',
-                        'description',
-                        'start_time',
-                        'end_time',
-                        'is_music_or_dancing',
-                        'dress_code',
-                        'venue_name',
-                        'address_line_1',
-                        'address_line_2',
-                        'city',
-                        'state',
-                        'country',
-                        'post_code',
-                        'latitude',
-                        'longitude',
-                    ]);
-                    $eventAttributes['sort_order'] = $eventPayload['sort_order'] ?? $eventIndex;
-
-                    if (isset($eventPayload['id'])) {
-                        $event = $weddingDay->events()
-                            ->whereKey($eventPayload['id'])
-                            ->firstOrFail();
-                        $event->update($eventAttributes);
+                    if (($eventPayload['id'] ?? null) === null) {
+                        $weddingDay->events()->create($eventData);
                     } else {
-                        $event = $weddingDay->events()->create($eventAttributes);
+                        $weddingDayEvent = $weddingDay->events()->findOrFail($eventPayload['id']);
+                        $weddingDayEvent->update($eventData);
                     }
-
-                    $submittedEventIds[] = $event->id;
                 }
-
-                $weddingDay->events()
-                    ->whereNotIn('id', $submittedEventIds)
-                    ->delete();
             }
 
-            $wedding->days()
-                ->whereNotIn('id', $submittedDayIds)
-                ->delete();
             $wedding->forceFill([
                 'current_step' => max($wedding->current_step, 4),
             ])->save();
@@ -83,29 +54,26 @@ class WeddingDetailsSynchronizer
      */
     private function saveDay(Wedding $wedding, array $dayPayload): WeddingDay
     {
-        $dayAttributes = Arr::only($dayPayload, [
-            'day_number',
-            'wedding_day_date',
-            'address_line_1',
-            'address_line_2',
-            'city',
-            'state',
-            'country',
-            'post_code',
-            'landmark_near',
-            'latitude',
-            'longitude',
-        ]);
+        $dayData = [
+            'wedding_day_date' => $dayPayload['wedding_day_date'],
+            'wedding_day_time' => $dayPayload['wedding_day_time'] ?? null,
+            'address_line_1' => $dayPayload['address_line_1'] ?? null,
+            'address_line_2' => $dayPayload['address_line_2'] ?? null,
+            'city' => $dayPayload['city'],
+            'state' => $dayPayload['state'] ?? null,
+            'post_code' => $dayPayload['post_code'] ?? null,
+            'landmark_near' => $dayPayload['landmark_near'] ?? null,
+            'latitude' => $dayPayload['latitude'] ?? null,
+            'longitude' => $dayPayload['longitude'] ?? null,
+        ];
 
-        if (isset($dayPayload['id'])) {
-            $weddingDay = $wedding->days()
-                ->whereKey($dayPayload['id'])
-                ->firstOrFail();
-            $weddingDay->update($dayAttributes);
-
-            return $weddingDay;
+        if (($dayPayload['id'] ?? null) === null) {
+            return $wedding->days()->create($dayData);
         }
 
-        return $wedding->days()->create($dayAttributes);
+        $weddingDay = $wedding->days()->findOrFail($dayPayload['id']);
+        $weddingDay->update($dayData);
+
+        return $weddingDay;
     }
 }

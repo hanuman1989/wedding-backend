@@ -16,6 +16,22 @@ use Illuminate\Support\Facades\Password;
 class AuthController extends Controller
 {
     // Register a new user
+    public function testRegister()
+    {
+        $data = [
+            'name' => 'Manu Yadav',
+            'email' => 'yadav.manu36@gmail.com',
+            'password' => 'Hanuman@1989',
+            'email_verified_at' => now(),
+            'phone' => '7665880635',
+            'status' => 1,
+        ];
+        $user = User::create($data);
+
+        return $user;
+    }
+
+    // Register a new user
     public function register(RegisterRequest $request)
     {
         $user = User::create($request->validated());
@@ -35,7 +51,8 @@ class AuthController extends Controller
     // Login user
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+
+        $user = User::where('email', $request->email)->where('status', 1)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([

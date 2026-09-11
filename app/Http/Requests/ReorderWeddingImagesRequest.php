@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -13,7 +12,7 @@ class ReorderWeddingImagesRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() instanceof User;
+        return $this->user() !== null;
     }
 
     /**
@@ -24,20 +23,14 @@ class ReorderWeddingImagesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'images' => [
+            'image_ids' => [
                 'required',
                 'array',
                 'min:1',
             ],
-            'images.*.id' => [
+            'image_ids.*' => [
                 'required',
                 'integer',
-                'distinct',
-            ],
-            'images.*.sort_order' => [
-                'required',
-                'integer',
-                'min:0',
                 'distinct',
             ],
         ];
