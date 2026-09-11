@@ -5,149 +5,139 @@ namespace App\Http\Controllers;
 use App\Http\Requests\IndexWeddingsRequest;
 use App\Http\Requests\StoreWeddingRequest;
 use App\Http\Requests\SubmitWeddingRequest;
-use App\Http\Requests\UpdateWeddingStepOneRequest;
+use App\Http\Requests\UpdateWeddingRequest;
 use App\Http\Resources\WeddingListResource;
 use App\Http\Resources\WeddingResource;
 use App\Models\Wedding;
 use App\Services\WeddingSubmissionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
+use Throwable;
+
 
 class WeddingController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index(IndexWeddingsRequest $request): JsonResponse
     {
-        $query = $request->user()->weddings()
+        $perPage = $request->integer('per_page', 15);
+        try {
+        $weddings = Wedding::where('user_id', $request->user()->id)
             ->with([
-                'creators:id,wedding_id,creator_type,first_name,last_name',
-                'images' => fn ($query) => $query
-                    ->select(['id', 'wedding_id', 'image', 'disk', 'sort_order'])
-                    ->limit(1),
-                'days' => fn ($query) => $query
-                    ->select(['id', 'wedding_id', 'day_number', 'wedding_day_date', 'city', 'state'])
-                    ->limit(1),
+                'creators',
+                'thumbnail',
+                'days',
+                'days.events',
             ])
-            ->withCount('images')
-            ->latest();
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status')->toString());
-        }
-
-        $weddings = $query->paginate($request->integer('per_page', 15));
+            ->orderBy('id', 'asc')
+            ->paginate($perPage);
 
         return response()->json([
             'status' => true,
-            'message' => '',
-            'data' => [
-                'items' => WeddingListResource::collection($weddings->items())->resolve(),
-                'pagination' => [
-                    'current_page' => $weddings->currentPage(),
-                    'last_page' => $weddings->lastPage(),
-                    'per_page' => $weddings->perPage(),
-                    'total' => $weddings->total(),
-                ],
-            ],
+            'data' => WeddingListResource::collection($weddings),
+            'message' => 'Weddings retrieved successfully.',
         ]);
+    } catch (Throwable $e) {
+        report($e);
+
+        return response()->json([
+            'status' => false,
+            'data' => null,
+            'message' => 'Something went wrong. Please try again.',
+        ], 500);
+    }
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(StoreWeddingRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $wedding = DB::transaction(function () use ($request, $user): Wedding {
-            $wedding = new Wedding($request->safe()->only([
-                'creator_type',
-                'creator_type_other',
-            ]));
-            $wedding->user()->associate($user);
-            $wedding->status = Wedding::STATUS_DRAFT;
-            $wedding->current_step = 1;
-            $wedding->save();
-
-            $wedding->creators()->create([
-                'creator_type' => $request->string('creator_type')->toString(),
-                'first_name' => $request->string('first_name')->toString(),
-                'last_name' => $request->string('last_name')->toString(),
-                'email' => $user->email,
-                'phone' => $request->string('phone')->toString(),
-                'fathers_name' => $request->string('fathers_name')->toString() ?: null,
-                'mothers_name' => $request->string('mothers_name')->toString() ?: null,
+        try {
+            $wedding = Wedding::create([
+                ...$request->validated(),
+                'user_id' => $request->user()->id,
+                'status' => Wedding::STATUS_DRAFT,
             ]);
 
-            $user->forceFill(['is_host' => true])->save();
-
-            return $wedding;
-        });
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Wedding draft created successfully.',
-            'data' => (new WeddingResource($wedding->load('creators', 'images', 'days.events')))->resolve(),
-        ], 201);
-    }
-
-    public function updateStepOne(UpdateWeddingStepOneRequest $request, Wedding $wedding): JsonResponse
-    {
-        $this->authorize('update', $wedding);
-
-        $user = $request->user();
-        $wedding = DB::transaction(function () use ($request, $user, $wedding): Wedding {
-            $creatorType = $request->string('creator_type')->toString();
-            $creator = $wedding->creators()
-                ->where('creator_type', $wedding->creator_type)
-                ->firstOrFail();
-
-            if ($wedding->creator_type !== $creatorType) {
-                if ($wedding->creators()->where('creator_type', $creatorType)->exists()) {
-                    throw ValidationException::withMessages([
-                        'creator_type' => 'The selected creator type is already assigned to another wedding participant.',
-                    ]);
-                }
-
-                $creator->update(['creator_type' => $creatorType]);
+            if (! $request->user()->is_host) {
+                $request->user()->update(['is_host' => true]);
             }
 
-            $wedding->update([
-                'creator_type' => $creatorType,
-                'creator_type_other' => $creatorType === 'other'
-                    ? $request->string('creator_type_other')->toString()
-                    : null,
-            ]);
-            $creator->update([
-                'first_name' => $request->string('first_name')->toString(),
-                'last_name' => $request->string('last_name')->toString(),
-                'email' => $user->email,
-                'phone' => $request->string('phone')->toString(),
-                'fathers_name' => $request->string('fathers_name')->toString() ?: null,
-                'mothers_name' => $request->string('mothers_name')->toString() ?: null,
-            ]);
+            $response = [
+                'status' => true,
+                'data' => new WeddingResource($wedding),
+                'message' => 'Wedding created successfully.',
+            ];
 
-            return $wedding;
-        });
+            return response()->json($response, 201);
+
+        } catch (Throwable $e) {
+            report($e);
+
+            $response = [
+                'status' => false,
+                'data' => null,
+                'message' => 'Unable to save wedding details. Please try again.',
+            ];
+
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Request $request, Wedding $wedding): JsonResponse
+    {
 
         return response()->json([
             'status' => true,
-            'message' => 'Wedding details saved successfully.',
-            'data' => (new WeddingResource($wedding->load('creators', 'images', 'days.events')))->resolve(),
+            'data' => new WeddingResource($wedding->load('creators', 'images', 'days.events')),
+            'message' => 'Wedding details retrieved successfully.',
         ]);
     }
 
-    public function show(Wedding $wedding): JsonResponse
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateWeddingRequest $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('view', $wedding);
+        if ($request->user()->id !== $wedding->user_id) {
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Wedding not found.',
+            ], 404);
+        }
+        try {
+            $wedding->update($request->validated());
+            $wedding->refresh();
+            if (! $request->user()->is_host) {
+                $request->user()->update(['is_host' => true]);
+            }
 
-        return response()->json([
-            'status' => true,
-            'message' => '',
-            'data' => (new WeddingResource($wedding->load('creators', 'images', 'days.events')))->resolve(),
-        ]);
+            return response()->json([
+                'status' => true,
+                'data' => new WeddingResource($wedding->load('images', 'days.events')),
+                'message' => 'Wedding updated successfully.',
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Unable to update wedding details. Please try again.',
+            ], 500);
+        }
     }
 
     public function submit(SubmitWeddingRequest $request, Wedding $wedding, WeddingSubmissionService $submissionService): JsonResponse
     {
-        $this->authorize('submit', $wedding);
 
         $wedding = $submissionService->submit($wedding);
 
@@ -158,22 +148,75 @@ class WeddingController extends Controller
         ]);
     }
 
-    public function destroy(Wedding $wedding): JsonResponse
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('delete', $wedding);
+        if ($request->user()->id !== $wedding->user_id) {
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Wedding not found.',
+            ], 404);
+        }
 
-        $wedding->images()->get()->each(function ($image): void {
-            Storage::disk($image->disk)->delete($image->image);
-        });
+        try {
+            $connection = $wedding->getConnection();
 
-        DB::transaction(function () use ($wedding): void {
-            $wedding->delete();
-        });
+            $connection->statement('SET FOREIGN_KEY_CHECKS = 0');
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Wedding deleted successfully.',
-            'data' => [],
-        ]);
+            try {
+                $connection->transaction(function () use ($connection, $wedding): void {
+                    $dayIds = $connection->table('wedding_days')
+                        ->where('wedding_id', $wedding->id)
+                        ->pluck('id');
+
+                    if ($dayIds->isNotEmpty()) {
+                        $connection->table('wedding_day_events')
+                            ->whereIn('wedding_day_id', $dayIds)
+                            ->delete();
+                    }
+
+                    $connection->table('wedding_days')
+                        ->where('wedding_id', $wedding->id)
+                        ->delete();
+
+                    $wedding->images()->each(function ($image): void {
+                        if ($image->image) {
+                            Storage::disk($image->disk ?? 'public')
+                                ->delete($image->image);
+                        }
+                    });
+
+                    $connection->table('wedding_images')
+                        ->where('wedding_id', $wedding->id)
+                        ->delete();
+                    $connection->table('wedding_creators')
+                        ->where('wedding_id', $wedding->id)
+                        ->delete();
+                    $connection->table('weddings')
+                        ->where('id', $wedding->id)
+                        ->delete();
+                });
+            } finally {
+                $connection->statement('SET FOREIGN_KEY_CHECKS = 1');
+            }
+
+            return response()->json([
+                'status' => true,
+                'data' => null,
+                'message' => 'Wedding deleted successfully.',
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => $e->getMessage(),
+                // 'message' => 'Unable to delete wedding. Please try again.',
+            ], 500);
+        }
     }
 }

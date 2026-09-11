@@ -15,7 +15,6 @@ class WeddingStepController extends Controller
 {
     public function updatePartnerDetails(UpdateWeddingPartnerRequest $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('update', $wedding);
 
         $wedding = DB::transaction(function () use ($request, $wedding): Wedding {
             $partnerCreatorTypes = match ($wedding->creator_type) {
@@ -48,8 +47,6 @@ class WeddingStepController extends Controller
 
     public function updateStory(UpdateWeddingStoryRequest $request, Wedding $wedding): JsonResponse
     {
-        $this->authorize('update', $wedding);
-
         $wedding->update($request->safe()->only(['description', 'video_url']));
         $wedding->forceFill([
             'current_step' => max($wedding->current_step, 3),
@@ -64,8 +61,6 @@ class WeddingStepController extends Controller
 
     public function updateWeddingDetails(UpdateWeddingDetailsRequest $request, Wedding $wedding, WeddingDetailsSynchronizer $synchronizer): JsonResponse
     {
-        $this->authorize('update', $wedding);
-
         $wedding = $synchronizer->synchronize($wedding, $request->validated());
 
         return response()->json([

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Wedding extends Model
 {
@@ -14,15 +15,10 @@ class Wedding extends Model
     use HasFactory;
 
     public const STATUS_DRAFT = 'draft';
-
     public const STATUS_SUBMITTED = 'submitted';
-
     public const STATUS_PUBLISHED = 'published';
-
     public const STATUS_ENDED = 'ended';
-
     public const STATUS_CANCELLED = 'cancelled';
-
     /** @var list<string> */
     public const CREATOR_TYPES = [
         'bride',
@@ -45,6 +41,11 @@ class Wedding extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'user_id',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
         'creator_type',
         'creator_type_other',
         'description',
@@ -53,6 +54,7 @@ class Wedding extends Model
         'food_observance',
         'is_alcohol_offered',
         'main_languages',
+        'status',
     ];
 
     /**
@@ -87,6 +89,15 @@ class Wedding extends Model
 
     public function days(): HasMany
     {
-        return $this->hasMany(WeddingDay::class)->orderBy('day_number');
+        return $this->hasMany(WeddingDay::class)->orderBy('id');
+    }
+
+    /**
+     * Get the primary/first wedding image.
+     */
+    public function thumbnail(): HasOne
+    {
+        return $this->hasOne(WeddingImage::class)
+            ->ofMany('sort_order', 'min');
     }
 }

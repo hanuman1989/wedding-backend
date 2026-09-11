@@ -13,7 +13,7 @@ class UpdateWeddingStoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() instanceof User;
+        return $this->user() !== null;
     }
 
     /**

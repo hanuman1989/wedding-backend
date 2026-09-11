@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreWeddingRequest extends FormRequest
+class UpdateWeddingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,9 +24,11 @@ class StoreWeddingRequest extends FormRequest
      */
     public function rules(): array
     {
+        $required = $this->isMethod('put') ? 'required' : 'sometimes';
+
         return [
             'creator_type' => [
-                'required',
+                $required,
                 'string',
                 Rule::in(Wedding::CREATOR_TYPES),
             ],
@@ -38,22 +40,22 @@ class StoreWeddingRequest extends FormRequest
                 'exclude_unless:creator_type,other',
             ],
             'first_name' => [
-                'required',
+                $required,
                 'string',
                 'max:100',
             ],
             'last_name' => [
-                'required',
+                $required,
                 'string',
                 'max:100',
             ],
             'phone' => [
-                'required',
+                $required,
                 'string',
                 'regex:/^\+[1-9][0-9]{1,14}$/',
             ],
             'email' => [
-                'required',
+                $required,
                 'string',
                 'email',
                 'max:255',

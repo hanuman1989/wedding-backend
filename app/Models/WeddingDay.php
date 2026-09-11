@@ -21,6 +21,7 @@ class WeddingDay extends Model
     protected $fillable = [
         'day_number',
         'wedding_day_date',
+        'wedding_day_time',
         'address_line_1',
         'address_line_2',
         'city',

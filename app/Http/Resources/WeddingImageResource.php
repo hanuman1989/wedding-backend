@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class WeddingImageResource extends JsonResource
 {
@@ -17,7 +16,7 @@ class WeddingImageResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'url' => Storage::disk($this->disk)->url($this->image),
+            'url' => asset('storage/'.ltrim((string) $this->image, '/')),
             'sort_order' => $this->sort_order,
         ];
     }
