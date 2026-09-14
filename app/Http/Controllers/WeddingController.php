@@ -9,12 +9,12 @@ use App\Http\Requests\UpdateWeddingRequest;
 use App\Http\Resources\WeddingListResource;
 use App\Http\Resources\WeddingResource;
 use App\Models\Wedding;
+use App\Models\WeddingDayEvent;
 use App\Services\WeddingSubmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
-
 
 class WeddingController extends Controller
 {
@@ -25,30 +25,30 @@ class WeddingController extends Controller
     {
         $perPage = $request->integer('per_page', 15);
         try {
-        $weddings = Wedding::where('user_id', $request->user()->id)
-            ->with([
-                'creators',
-                'thumbnail',
-                'days',
-                'days.events',
-            ])
-            ->orderBy('id', 'asc')
-            ->paginate($perPage);
+            $weddings = Wedding::where('user_id', $request->user()->id)
+                ->with([
+                    'creators',
+                    'thumbnail',
+                    'days',
+                    'days.events',
+                ])
+                ->orderBy('id', 'asc')
+                ->paginate($perPage);
 
-        return response()->json([
-            'status' => true,
-            'data' => WeddingListResource::collection($weddings),
-            'message' => 'Weddings retrieved successfully.',
-        ]);
-    } catch (Throwable $e) {
-        report($e);
+            return response()->json([
+                'status' => true,
+                'data' => WeddingListResource::collection($weddings),
+                'message' => 'Weddings retrieved successfully.',
+            ]);
+        } catch (Throwable $e) {
+            report($e);
 
-        return response()->json([
-            'status' => false,
-            'data' => null,
-            'message' => 'Something went wrong. Please try again.',
-        ], 500);
-    }
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Something went wrong. Please try again.',
+            ], 500);
+        }
     }
 
     /**
@@ -74,7 +74,6 @@ class WeddingController extends Controller
             ];
 
             return response()->json($response, 201);
-
         } catch (Throwable $e) {
             report($e);
 
@@ -207,6 +206,36 @@ class WeddingController extends Controller
                 'status' => true,
                 'data' => null,
                 'message' => 'Wedding deleted successfully.',
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => $e->getMessage(),
+                // 'message' => 'Unable to delete wedding. Please try again.',
+            ], 500);
+        }
+    }
+
+    public function eventDestroy(Request $request, Wedding $wedding, WeddingDayEvent $event): JsonResponse
+    {
+        if ($request->user()->id !== $wedding->user_id) {
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Wedding not found.',
+            ], 404);
+        }
+
+        try {
+            $event->delete();
+
+            return response()->json([
+                'status' => true,
+                'data' => null,
+                'message' => 'Wedding day event deleted successfully.',
             ]);
         } catch (Throwable $e) {
             report($e);

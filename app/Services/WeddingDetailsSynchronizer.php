@@ -21,6 +21,15 @@ class WeddingDetailsSynchronizer
                 'is_alcohol_offered',
             ]));
 
+            $submittedDayIds = collect($attributes['wedding_days'])
+                ->pluck('id')
+                ->filter()
+                ->all();
+
+            $wedding->days()
+                ->whereNotIn('id', $submittedDayIds)
+                ->delete();
+
             foreach ($attributes['wedding_days'] as $dayPayload) {
                 $weddingDay = $this->saveDay($wedding, $dayPayload);
 

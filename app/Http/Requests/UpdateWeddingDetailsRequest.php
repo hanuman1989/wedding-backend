@@ -95,12 +95,10 @@ class UpdateWeddingDetailsRequest extends FormRequest
             'wedding_days.*.latitude' => [
                 'nullable',
                 'numeric',
-                'between:-90,90',
             ],
             'wedding_days.*.longitude' => [
                 'nullable',
                 'numeric',
-                'between:-180,180',
             ],
             'wedding_days.*.wedding_day_events' => [
                 'required',
@@ -121,63 +119,15 @@ class UpdateWeddingDetailsRequest extends FormRequest
                 'string',
                 'max:2000',
             ],
-            'wedding_days.*.wedding_day_events.*.start_time' => [
-                'nullable',
-                'date_format:H:i',
-            ],
+
             'wedding_days.*.wedding_day_events.*.is_music_or_dancing' => [
                 'nullable',
                 'boolean',
             ],
             'wedding_days.*.wedding_day_events.*.dress_code' => [
-                'required',
-                'string',
-                'max:100',
-            ],
-            'wedding_days.*.wedding_day_events.*.venue_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'wedding_days.*.wedding_day_events.*.address_line_1' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'wedding_days.*.wedding_day_events.*.address_line_2' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'wedding_days.*.wedding_day_events.*.city' => [
                 'nullable',
                 'string',
                 'max:100',
-            ],
-            'wedding_days.*.wedding_day_events.*.state' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-            'wedding_days.*.wedding_day_events.*.country' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-            'wedding_days.*.wedding_day_events.*.post_code' => [
-                'nullable',
-                'string',
-                'max:20',
-            ],
-            'wedding_days.*.wedding_day_events.*.latitude' => [
-                'nullable',
-                'numeric',
-                'between:-90,90',
-            ],
-            'wedding_days.*.wedding_day_events.*.longitude' => [
-                'nullable',
-                'numeric',
-                'between:-180,180',
             ],
             'wedding_days.*.wedding_day_events.*.sort_order' => [
                 'nullable',
@@ -247,22 +197,6 @@ class UpdateWeddingDetailsRequest extends FormRequest
             'wedding_days.*.wedding_day_events.*.dress_code.max' => 'The dress code may not exceed 100 characters.',
             'wedding_days.*.wedding_day_events.*.venue_name.string' => 'The venue name must be text.',
             'wedding_days.*.wedding_day_events.*.venue_name.max' => 'The venue name may not exceed 255 characters.',
-            'wedding_days.*.wedding_day_events.*.address_line_1.string' => 'The event first address line must be text.',
-            'wedding_days.*.wedding_day_events.*.address_line_1.max' => 'The event first address line may not exceed 255 characters.',
-            'wedding_days.*.wedding_day_events.*.address_line_2.string' => 'The event second address line must be text.',
-            'wedding_days.*.wedding_day_events.*.address_line_2.max' => 'The event second address line may not exceed 255 characters.',
-            'wedding_days.*.wedding_day_events.*.city.string' => 'The event city must be text.',
-            'wedding_days.*.wedding_day_events.*.city.max' => 'The event city may not exceed 100 characters.',
-            'wedding_days.*.wedding_day_events.*.state.string' => 'The event state must be text.',
-            'wedding_days.*.wedding_day_events.*.state.max' => 'The event state may not exceed 100 characters.',
-            'wedding_days.*.wedding_day_events.*.country.string' => 'The event country must be text.',
-            'wedding_days.*.wedding_day_events.*.country.max' => 'The event country may not exceed 100 characters.',
-            'wedding_days.*.wedding_day_events.*.post_code.string' => 'The event post code must be text.',
-            'wedding_days.*.wedding_day_events.*.post_code.max' => 'The event post code may not exceed 20 characters.',
-            'wedding_days.*.wedding_day_events.*.latitude.numeric' => 'The event latitude must be a number.',
-            'wedding_days.*.wedding_day_events.*.latitude.between' => 'The event latitude must be between -90 and 90.',
-            'wedding_days.*.wedding_day_events.*.longitude.numeric' => 'The event longitude must be a number.',
-            'wedding_days.*.wedding_day_events.*.longitude.between' => 'The event longitude must be between -180 and 180.',
             'wedding_days.*.wedding_day_events.*.sort_order.integer' => 'The event sort order must be a whole number.',
             'wedding_days.*.wedding_day_events.*.sort_order.min' => 'The event sort order cannot be negative.',
         ];
