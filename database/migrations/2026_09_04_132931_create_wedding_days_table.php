@@ -27,7 +27,6 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamps();
 
-            $table->unique(['wedding_id']);
         });
     }
 

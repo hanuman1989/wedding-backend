@@ -121,7 +121,7 @@ class SocialAuthController extends Controller
              * Create your existing Sanctum bearer token.
              */
             $token = $user
-                ->createToken('frontend')
+                ->createToken('user-auth-token')
                 ->plainTextToken;
 
             /*
@@ -149,8 +149,8 @@ class SocialAuthController extends Controller
                     config('app.frontend_url'),
                     '/'
                 )
-                    .'/auth/social/callback?code='
-                    .urlencode($rawCode)
+                    . '/auth/social/callback?code='
+                    . urlencode($rawCode)
             );
         } catch (Throwable $exception) {
 
@@ -161,7 +161,7 @@ class SocialAuthController extends Controller
                     config('app.frontend_url'),
                     '/'
                 )
-                    .'/login?social_login=failed'
+                    . '/login?social_login=failed'
             );
         }
     }
@@ -219,7 +219,7 @@ class SocialAuthController extends Controller
          * you are already using for normal login.
          */
         $token = $user
-            ->createToken('frontend')
+            ->createToken('user-auth-token')
             ->plainTextToken;
 
         return response()->json([
