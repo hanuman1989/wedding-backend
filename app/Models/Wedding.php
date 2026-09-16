@@ -15,10 +15,15 @@ class Wedding extends Model
     use HasFactory;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_PUBLISHED = 'published';
+
     public const STATUS_ENDED = 'ended';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     /** @var list<string> */
     public const CREATOR_TYPES = [
         'bride',
@@ -53,8 +58,14 @@ class Wedding extends Model
         'number_of_days',
         'food_observance',
         'is_alcohol_offered',
+        'is_popular',
         'main_languages',
+        'guide_full_name',
+        'guide_phone_number',
+        'submitted_at',
+        'published_at',
         'status',
+        'current_step',
     ];
 
     /**
@@ -66,6 +77,7 @@ class Wedding extends Model
     {
         return [
             'is_alcohol_offered' => 'boolean',
+            'is_popular' => 'boolean',
             'main_languages' => 'array',
             'submitted_at' => 'datetime',
             'published_at' => 'datetime',
@@ -92,6 +104,11 @@ class Wedding extends Model
         return $this->hasMany(WeddingDay::class)->orderBy('id');
     }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(WeddingBooking::class)->orderBy('id');
+    }
+
     /**
      * Get the primary/first wedding image.
      */
@@ -99,5 +116,15 @@ class Wedding extends Model
     {
         return $this->hasOne(WeddingImage::class)
             ->ofMany('sort_order', 'min');
+    }
+
+    public function isExpired(): bool
+    {
+        $this->loadMissing('days');
+
+        return $this->days->isNotEmpty()
+            && $this->days->every(
+                fn ($day) => $day->wedding_day_date?->isPast()
+            );
     }
 }

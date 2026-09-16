@@ -58,6 +58,16 @@ class StoreWeddingRequest extends FormRequest
                 'email',
                 'max:255',
             ],
+            'guide_full_name' => [
+                'required',
+                'string',
+                'max:150',
+            ],
+            'guide_phone_number' => [
+                'required',
+                'string',
+                'regex:/^\+[1-9][0-9]{1,14}$/',
+            ],
         ];
     }
 }

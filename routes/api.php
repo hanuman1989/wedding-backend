@@ -5,10 +5,11 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WeddingBookingController;
 use App\Http\Controllers\WeddingController;
+use App\Http\Controllers\WeddingDetailController;
 use App\Http\Controllers\WeddingImageController;
 use App\Http\Controllers\WeddingListController;
-use App\Http\Controllers\WeddingDetailController;
 use App\Http\Controllers\WeddingStepController;
 use App\Http\Resources\AdminUserResource;
 use Illuminate\Http\Request;
@@ -22,7 +23,6 @@ Route::post('reset-password', [UserAuthController::class, 'resetPassword'])->nam
 Route::get('/wedding-list', [WeddingListController::class, 'index'])->name('weddinglist.index');
 Route::get('/popular-weddings', [WeddingListController::class, 'popular'])->name('weddinglist.popular');
 Route::get('/wedding-details/{wedding}', [WeddingDetailController::class, 'show'])->name('weddingdetail');
-
 
 Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
@@ -49,6 +49,16 @@ Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
 
     Route::delete('weddings/{wedding}', [WeddingController::class, 'destroy'])->name('weddings.destroy');
     Route::delete('weddings/{wedding}/events/{event}', [WeddingController::class, 'eventDestroy'])->name('weddings.events.destroy');
+
+    Route::post(
+        'weddings/{wedding}/bookings',
+        [WeddingBookingController::class, 'store']
+    );
+
+    Route::get(
+        'wedding/{wedding}/booking/{booking}',
+        [WeddingBookingController::class, 'show']
+    );
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {

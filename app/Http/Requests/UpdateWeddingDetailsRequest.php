@@ -57,6 +57,11 @@ class UpdateWeddingDetailsRequest extends FormRequest
                 'nullable',
                 'date_format:H:i',
             ],
+            'wedding_days.*.venue_title' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'wedding_days.*.address_line_1' => [
                 'nullable',
                 'string',
@@ -121,6 +126,10 @@ class UpdateWeddingDetailsRequest extends FormRequest
             ],
 
             'wedding_days.*.wedding_day_events.*.is_music_or_dancing' => [
+                'nullable',
+                'boolean',
+            ],
+            'wedding_days.*.wedding_day_events.*.is_alcohol_offered' => [
                 'nullable',
                 'boolean',
             ],

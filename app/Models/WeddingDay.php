@@ -22,6 +22,7 @@ class WeddingDay extends Model
         'day_number',
         'wedding_day_date',
         'wedding_day_time',
+        'venue_title',
         'address_line_1',
         'address_line_2',
         'city',

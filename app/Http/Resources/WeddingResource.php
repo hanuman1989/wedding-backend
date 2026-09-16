@@ -24,6 +24,8 @@ class WeddingResource extends JsonResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'guide_full_name' => $this->guide_full_name,
+            'guide_phone_number' => $this->guide_phone_number,
             'creator_type' => $this->creator_type,
             'creator_type_other' => $this->creator_type_other,
             'description' => $this->description,
