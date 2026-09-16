@@ -17,6 +17,10 @@ class WeddingDetailResource extends JsonResource
         $creators = $this->relationLoaded('creators')
             ? $this->creators->keyBy('creator_type')
             : collect();
+        $days = $this->relationLoaded('days')
+        ? $this->days
+        : collect();
+
         $coverImage = $this->relationLoaded('thumbnail') ? $this->thumbnail : null;
         $firstDay = $this->relationLoaded('days') ? $this->days->first() : null;
         $lastDay = $this->relationLoaded('days') ? $this->days->last() : null;
@@ -28,37 +32,46 @@ class WeddingDetailResource extends JsonResource
         $weddingDates = $firstWeddingDate && $lastWeddingDate
             ? ($firstWeddingDate === $lastWeddingDate
                 ? $firstWeddingDate
-                : $firstWeddingDate . ' - ' . $lastWeddingDate)
+                : $firstWeddingDate.' - '.$lastWeddingDate)
             : null;
         $coupleName = match ($this->creator_type) {
             'other' => $creators->has('bride') && $creators->has('groom')
-                ? trim($creators->get('bride')->first_name . ' ' . $creators->get('bride')->last_name)
-                . ' & ' . trim($creators->get('groom')->first_name . ' ' . $creators->get('groom')->last_name)
+                ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
+                .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
                 : null,
             'bride' => $creators->has('groom')
-                ? trim($this->first_name . ' ' . $this->last_name)
-                . ' & ' . trim($creators->get('groom')->first_name . ' ' . $creators->get('groom')->last_name)
+                ? trim($this->first_name.' '.$this->last_name)
+                .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
                 : null,
             'groom' => $creators->has('bride')
-                ? trim($this->first_name . ' ' . $this->last_name)
-                . ' & ' . trim($creators->get('bride')->first_name . ' ' . $creators->get('bride')->last_name)
+                ? trim($this->first_name.' '.$this->last_name)
+                .' & '.trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
                 : null,
             default => null,
         };
 
+        /*
+     * Wedding is expired only when ALL wedding days are in the past.
+     */
+        $isExpired = $days->isNotEmpty()
+            && $days->every(
+                fn ($day) => $day->wedding_day_date?->isPast()
+            );
+
         return [
             'id' => $this->id,
+            'wid' => $this->user_id,
             'status' => $this->status,
             'current_step' => $this->current_step,
             'creator_type' => $this->creator_type,
             'bride_name' => $creators->has('bride')
-                ? trim($creators->get('bride')->first_name . ' ' . $creators->get('bride')->last_name)
+                ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
                 : null,
             'groom_name' => $creators->has('groom')
-                ? trim($creators->get('groom')->first_name . ' ' . $creators->get('groom')->last_name)
+                ? trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
                 : null,
             'couple_name' => $coupleName,
-            'cover_image' => $coverImage ? asset('storage/' . $coverImage->image) : null,
+            'cover_image' => $coverImage ? asset('storage/'.$coverImage->image) : null,
             'number_of_days' => $this->number_of_days,
             'food_observance' => $this->food_observance,
             'description' => $this->description,
@@ -71,6 +84,8 @@ class WeddingDetailResource extends JsonResource
             'images_count' => $this->whenCounted('images'),
             'images' => WeddingImageResource::collection($this->whenLoaded('images')),
             'wedding_days' => WeddingDayResource::collection($this->whenLoaded('days')),
+            'wedding_expired' => $isExpired,
+            'wedding_expired_test' => $this->isExpired(),
             'created_at' => $this->created_at?->format('d M Y'),
         ];
     }

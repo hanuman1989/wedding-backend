@@ -20,10 +20,12 @@ class WeddingDayEvent extends Model
     protected $fillable = [
         'wedding_day_id',
         'title',
+        'event_time',
         'description',
         'start_time',
         'end_time',
         'is_music_or_dancing',
+        'is_alcohol_offered',
         'dress_code',
         'sort_order',
     ];
@@ -37,9 +39,8 @@ class WeddingDayEvent extends Model
     {
         return [
             'is_music_or_dancing' => 'boolean',
+            'is_alcohol_offered' => 'boolean',
             'wedding_day_id' => 'integer',
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
             'sort_order' => 'integer',
         ];
     }

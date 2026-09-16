@@ -38,6 +38,7 @@ class WeddingDetailsSynchronizer
                         'title' => $eventPayload['title'],
                         'description' => $eventPayload['description'],
                         'is_music_or_dancing' => $eventPayload['is_music_or_dancing'] ?? null,
+                        'is_alcohol_offered' => $eventPayload['is_alcohol_offered'] ?? null,
                         'dress_code' => $eventPayload['dress_code'],
                     ];
 
@@ -66,6 +67,7 @@ class WeddingDetailsSynchronizer
         $dayData = [
             'wedding_day_date' => $dayPayload['wedding_day_date'],
             'wedding_day_time' => $dayPayload['wedding_day_time'] ?? null,
+            'venue_title' => $dayPayload['venue_title'] ?? null,
             'address_line_1' => $dayPayload['address_line_1'] ?? null,
             'address_line_2' => $dayPayload['address_line_2'] ?? null,
             'city' => $dayPayload['city'],

@@ -14,6 +14,7 @@ class WeddingDayResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $isDayExpired = $this->wedding_day_date?->isPast() ?? false;
         return [
             'id' => $this->id,
             'day_number' => $this->day_number,
@@ -21,6 +22,8 @@ class WeddingDayResource extends JsonResource
             'wedding_day_time' => $this->wedding_day_time
                 ? substr((string) $this->wedding_day_time, 0, 5)
                 : null,
+            'wedding_day_format' => $this->wedding_day_date?->format('l, d M Y'),
+            'venue_title' => $this->venue_title,
             'address_line_1' => $this->address_line_1,
             'address_line_2' => $this->address_line_2,
             'city' => $this->city,
@@ -30,6 +33,17 @@ class WeddingDayResource extends JsonResource
             'landmark_near' => $this->landmark_near,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'isDayExpired' => $isDayExpired,
+            'location' => collect([
+                    $this->venue_title,
+                    $this->address_line_1,
+                    $this->address_line_2,
+                    $this->city,
+                    $this->state,
+                    $this->post_code,
+                ])
+                    ->filter()
+                    ->implode(', '),
             'wedding_day_events' => WeddingDayEventResource::collection($this->whenLoaded('events')),
         ];
     }
