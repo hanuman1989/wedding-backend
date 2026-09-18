@@ -31,6 +31,27 @@ class WeddingBooking extends Model
         'expires_at' => 'datetime',
     ];
 
+    public const STATUS_PENDING = 'pending_payment';
+
+    public const STATUS_CONFIRMED = 'confirmed';
+
+    public const STATUS_FAILED = 'payment_failed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+        self::STATUS_CANCELLED,
+        self::STATUS_EXPIRED,
+        self::STATUS_COMPLETED,
+    ];
+
     public function wedding()
     {
         return $this->belongsTo(Wedding::class);

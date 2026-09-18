@@ -24,6 +24,11 @@ Route::get('/wedding-list', [WeddingListController::class, 'index'])->name('wedd
 Route::get('/popular-weddings', [WeddingListController::class, 'popular'])->name('weddinglist.popular');
 Route::get('/wedding-details/{wedding}', [WeddingDetailController::class, 'show'])->name('weddingdetail');
 
+Route::post(
+    'stripe/webhook',
+    [WeddingBookingController::class, 'webhook']
+);
+
 Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
     Route::get('me', [UserAuthController::class, 'me'])->name('me');
@@ -58,6 +63,11 @@ Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     Route::get(
         'wedding/{wedding}/booking/{booking}',
         [WeddingBookingController::class, 'show']
+    );
+
+    Route::post(
+        'wedding-bookings/{booking}/payment/verify',
+        [WeddingBookingController::class, 'verifyPayment']
     );
 });
 
