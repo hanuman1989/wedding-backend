@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminBookingController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\BookingInvitationCardController;
+use App\Http\Controllers\ContactInquiriesController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeddingBookingController;
 use App\Http\Controllers\WeddingController;
@@ -24,10 +27,13 @@ Route::get('/wedding-list', [WeddingListController::class, 'index'])->name('wedd
 Route::get('/popular-weddings', [WeddingListController::class, 'popular'])->name('weddinglist.popular');
 Route::get('/wedding-details/{wedding}', [WeddingDetailController::class, 'show'])->name('weddingdetail');
 
+Route::post('/contact-inquiries', [ContactInquiriesController::class, 'store'])->name('contact-inquiries.store');
+
 Route::post(
     'stripe/webhook',
     [WeddingBookingController::class, 'webhook']
 );
+
 
 Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
@@ -61,6 +67,11 @@ Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     );
 
     Route::get(
+        'wedding-bookings',
+        [WeddingBookingController::class, 'index']
+    );
+
+    Route::get(
         'wedding/{wedding}/booking/{booking}',
         [WeddingBookingController::class, 'show']
     );
@@ -69,6 +80,25 @@ Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
         'wedding-bookings/{booking}/payment/verify',
         [WeddingBookingController::class, 'verifyPayment']
     );
+
+    Route::get(
+        'wedding-bookings/stats',
+        [WeddingBookingController::class, 'stats']
+    );
+
+    Route::get(
+        'wedding-bookings/{booking}',
+        [WeddingBookingController::class, 'bookingDetail']
+    );
+
+    Route::get(
+        'bookings/{booking}/invitation/preview',
+        [BookingInvitationCardController::class, 'preview']
+    )->name('booking.invitation.preview');
+    Route::get(
+        'bookings/{booking}/invitation/download',
+        [BookingInvitationCardController::class, 'download']
+    )->name('booking.invitation.download');
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -88,6 +118,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::apiResource('admin-users', AdminUserController::class);
+
+        Route::get('bookings/stats', [AdminBookingController::class, 'stats'])->name('bookings.stats');
     });
 });
 

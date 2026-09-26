@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 class WeddingDayResource extends JsonResource
 {
@@ -15,6 +16,14 @@ class WeddingDayResource extends JsonResource
     public function toArray(Request $request): array
     {
         $isDayExpired = $this->wedding_day_date?->isPast() ?? false;
+
+        /*
+         * wedding_day_time is a raw "time" column string, not a Carbon cast.
+         */
+        $weddingDayTime = $this->wedding_day_time
+            ? Carbon::parse($this->wedding_day_time)
+            : null;
+
         return [
             'id' => $this->id,
             'day_number' => $this->day_number,
@@ -23,6 +32,7 @@ class WeddingDayResource extends JsonResource
                 ? substr((string) $this->wedding_day_time, 0, 5)
                 : null,
             'wedding_day_format' => $this->wedding_day_date?->format('l, d M Y'),
+            'wedding_day_time_format' => $weddingDayTime?->format('h:i A'),
             'venue_title' => $this->venue_title,
             'address_line_1' => $this->address_line_1,
             'address_line_2' => $this->address_line_2,
@@ -33,17 +43,17 @@ class WeddingDayResource extends JsonResource
             'landmark_near' => $this->landmark_near,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
-            'isDayExpired' => $isDayExpired,
+            'is_day_expired' => $isDayExpired,
             'location' => collect([
-                    $this->venue_title,
-                    $this->address_line_1,
-                    $this->address_line_2,
-                    $this->city,
-                    $this->state,
-                    $this->post_code,
-                ])
-                    ->filter()
-                    ->implode(', '),
+                $this->venue_title,
+                $this->address_line_1,
+                $this->address_line_2,
+                $this->city,
+                $this->state,
+                $this->post_code,
+            ])
+                ->filter()
+                ->implode(', '),
             'wedding_day_events' => WeddingDayEventResource::collection($this->whenLoaded('events')),
         ];
     }

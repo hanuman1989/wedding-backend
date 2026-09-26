@@ -21,7 +21,8 @@ class WeddingBookingPolicy
      */
     public function view(User $user, WeddingBooking $weddingBooking): bool
     {
-        return $weddingBooking->user_id === $user->id;
+        return $weddingBooking->user_id === $user->id
+            || $weddingBooking->wedding->user_id === $user->id;
     }
 
     /**

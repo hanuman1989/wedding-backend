@@ -15,10 +15,11 @@ class WeddingDetailController extends Controller
             'status' => true,
             'data' => new WeddingDetailResource(
                 $wedding->load([
-                        'creators',
-                        'images',
-                        'days.events'
-                        ])
+                    'creators',
+                    'images',
+                    'thumbnail',
+                    'days.events'
+                ])
             ),
             'message' => 'Wedding details retrieved successfully.',
         ]);
@@ -32,7 +33,7 @@ class WeddingDetailController extends Controller
                 $wedding->load([
                     'creators',
                     'images',
-                    'days' => fn ($query) => $query
+                    'days' => fn($query) => $query
                         ->whereDate('wedding_day_date', '>=', today())
                         ->orderBy('wedding_day_date', 'asc')
                         ->orderBy('id', 'asc')

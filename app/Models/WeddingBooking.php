@@ -32,15 +32,10 @@ class WeddingBooking extends Model
     ];
 
     public const STATUS_PENDING = 'pending_payment';
-
     public const STATUS_CONFIRMED = 'confirmed';
-
     public const STATUS_FAILED = 'payment_failed';
-
     public const STATUS_CANCELLED = 'cancelled';
-
     public const STATUS_EXPIRED = 'expired';
-
     public const STATUS_COMPLETED = 'completed';
 
     /** @var list<string> */

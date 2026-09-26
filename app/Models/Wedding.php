@@ -51,6 +51,8 @@ class Wedding extends Model
         'last_name',
         'email',
         'phone',
+        'fathers_name',
+        'mothers_name',
         'creator_type',
         'creator_type_other',
         'description',

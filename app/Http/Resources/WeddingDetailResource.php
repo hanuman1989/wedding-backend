@@ -58,18 +58,64 @@ class WeddingDetailResource extends JsonResource
                 fn ($day) => $day->wedding_day_date?->isPast()
             );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Bride / Groom Names
+        |--------------------------------------------------------------------------
+        |
+        | creator_type = groom
+        |   -> Groom comes from weddings table
+        |   -> Bride comes from wedding_creators table
+        |
+        | creator_type = bride
+        |   -> Bride comes from weddings table
+        |   -> Groom comes from wedding_creators table
+        |
+        | creator_type = other
+        |   -> Both Bride and Groom come from wedding_creators table
+        |
+        */
+
+        $groomName = match ($this->creator_type) {
+            'groom' => trim(
+                $this->first_name.' '.$this->last_name
+            ),
+
+            'bride',
+            'other' => $creators->has('groom')
+                ? trim(
+                    $creators->get('groom')->first_name.' '.
+                    $creators->get('groom')->last_name
+                )
+                : null,
+
+            default => null,
+        };
+
+        $brideName = match ($this->creator_type) {
+            'bride' => trim(
+                $this->first_name.' '.$this->last_name
+            ),
+
+            'groom',
+            'other' => $creators->has('bride')
+                ? trim(
+                    $creators->get('bride')->first_name.' '.
+                    $creators->get('bride')->last_name
+                )
+                : null,
+
+            default => null,
+        };
+
         return [
             'id' => $this->id,
             'wid' => $this->user_id,
             'status' => $this->status,
             'current_step' => $this->current_step,
             'creator_type' => $this->creator_type,
-            'bride_name' => $creators->has('bride')
-                ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
-                : null,
-            'groom_name' => $creators->has('groom')
-                ? trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
-                : null,
+            'bride_name' => $brideName,
+            'groom_name' => $groomName,
             'couple_name' => $coupleName,
             'cover_image' => $coverImage ? asset('storage/'.$coverImage->image) : null,
             'number_of_days' => $this->number_of_days,

@@ -46,4 +46,9 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
     ],
 
+    'wedding' => [
+        'price_per_person' => env('PRICE_PER_PERSON', 150),
+        'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 40),
+    ],
+
 ];
