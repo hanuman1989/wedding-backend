@@ -38,6 +38,16 @@ class WeddingController extends Controller
             return response()->json([
                 'status' => true,
                 'data' => WeddingListResource::collection($weddings),
+                'pagination' => [
+                    'current_page' => $weddings->currentPage(),
+                    'last_page' => $weddings->lastPage(),
+                    'per_page' => $weddings->perPage(),
+                    'total' => $weddings->total(),
+                    'from' => $weddings->firstItem(),
+                    'to' => $weddings->lastItem(),
+                    'next_page_url' => $weddings->nextPageUrl(),
+                    'prev_page_url' => $weddings->previousPageUrl(),
+                ],
                 'message' => 'Weddings retrieved successfully.',
             ]);
         } catch (Throwable $e) {

@@ -33,16 +33,66 @@ class WeddingListResource extends JsonResource
         $coupleName = match ($this->creator_type) {
             'other' => $creators->has('bride') && $creators->has('groom')
                 ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
-                    .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
+                .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
                 : null,
             'bride' => $creators->has('groom')
                 ? trim($this->first_name.' '.$this->last_name)
-                    .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
+                .' & '.trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
                 : null,
             'groom' => $creators->has('bride')
                 ? trim($this->first_name.' '.$this->last_name)
-                    .' & '.trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
+                .' & '.trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
                 : null,
+            default => null,
+        };
+
+        /*
+|--------------------------------------------------------------------------
+| Bride / Groom Names
+|--------------------------------------------------------------------------
+|
+| creator_type = groom
+|   -> Groom comes from weddings table
+|   -> Bride comes from wedding_creators table
+|
+| creator_type = bride
+|   -> Bride comes from weddings table
+|   -> Groom comes from wedding_creators table
+|
+| creator_type = other
+|   -> Both Bride and Groom come from wedding_creators table
+|
+*/
+
+        $groomName = match ($this->creator_type) {
+            'groom' => trim(
+                $this->first_name.' '.$this->last_name
+            ),
+
+            'bride',
+            'other' => $creators->has('groom')
+                ? trim(
+                    $creators->get('groom')->first_name.' '.
+                    $creators->get('groom')->last_name
+                )
+                : null,
+
+            default => null,
+        };
+
+        $brideName = match ($this->creator_type) {
+            'bride' => trim(
+                $this->first_name.' '.$this->last_name
+            ),
+
+            'groom',
+            'other' => $creators->has('bride')
+                ? trim(
+                    $creators->get('bride')->first_name.' '.
+                    $creators->get('bride')->last_name
+                )
+                : null,
+
             default => null,
         };
 
@@ -51,22 +101,19 @@ class WeddingListResource extends JsonResource
             'status' => $this->status,
             'current_step' => $this->current_step,
             'creator_type' => $this->creator_type,
-            'bride_name' => $creators->has('bride')
-                ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
-                : null,
-            'groom_name' => $creators->has('groom')
-                ? trim($creators->get('groom')->first_name.' '.$creators->get('groom')->last_name)
-                : null,
+            'bride_name' => $brideName,
+            'groom_name' => $groomName,
             'couple_name' => $coupleName,
-            'cover_image' => $coverImage ? asset('storage/'. $coverImage->image) : null,
+            'cover_image' => $coverImage ? asset('storage/'.$coverImage->image) : null,
             'number_of_days' => $this->number_of_days,
-            'food_observance'=> $this->food_observance,
+            'food_observance' => $this->food_observance,
             'is_alcohol_offered' => $this->is_alcohol_offered,
             'first_wedding_date' => $firstDay?->wedding_day_date?->toDateString(),
             'last_wedding_date' => $lastDay?->wedding_day_date?->toDateString(),
             'wedding_dates' => $weddingDates,
             'locations' => $locations,
             'state' => $firstDay?->state,
+            'distance_km' => $this->distance_km !== null ? round((float) $this->distance_km, 2) : null,
             'images_count' => $this->whenCounted('images'),
             'created_at' => $this->created_at?->format('d M Y'),
         ];

@@ -58,6 +58,16 @@ class StoreWeddingRequest extends FormRequest
                 'email',
                 'max:255',
             ],
+            'fathers_name' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'mothers_name' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
             'guide_full_name' => [
                 'required',
                 'string',

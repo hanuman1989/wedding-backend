@@ -97,3 +97,76 @@ test('wedding list only includes weddings with today or future wedding days', fu
         ->assertJsonPath('pagination.total', 2)
         ->assertJsonCount(2, 'data.data');
 });
+
+test('wedding list filters by a custom start date', function () {
+    $before = Wedding::factory()->create();
+    WeddingDay::factory()->for($before)->create([
+        'wedding_day_date' => '2026-09-01',
+    ]);
+
+    $after = Wedding::factory()->create();
+    WeddingDay::factory()->for($after)->create([
+        'wedding_day_date' => '2026-09-25',
+    ]);
+
+    $this->getJson('/api/wedding-list?date=2026-09-20')
+        ->assertOk()
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.id', $after->id);
+});
+
+test('wedding list filters between a start date and an end date', function () {
+    $tooEarly = Wedding::factory()->create();
+    WeddingDay::factory()->for($tooEarly)->create([
+        'wedding_day_date' => '2026-09-10',
+    ]);
+
+    $withinRange = Wedding::factory()->create();
+    WeddingDay::factory()->for($withinRange)->create([
+        'wedding_day_date' => '2026-09-22',
+    ]);
+
+    $tooLate = Wedding::factory()->create();
+    WeddingDay::factory()->for($tooLate)->create([
+        'wedding_day_date' => '2026-10-05',
+    ]);
+
+    $this->getJson('/api/wedding-list?date=2026-09-20&end_date=2026-09-30')
+        ->assertOk()
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.id', $withinRange->id);
+});
+
+test('wedding list orders by nearest distance without duplicating weddings', function () {
+    $nearWedding = Wedding::factory()->create();
+    WeddingDay::factory()->for($nearWedding)->create([
+        'wedding_day_date' => today()->addDay(),
+        'latitude' => 0.01,
+        'longitude' => 0.01,
+    ]);
+    WeddingDay::factory()->for($nearWedding)->create([
+        'wedding_day_date' => today()->addDays(2),
+        'latitude' => 0.02,
+        'longitude' => 0.02,
+    ]);
+
+    $farWedding = Wedding::factory()->create();
+    WeddingDay::factory()->for($farWedding)->create([
+        'wedding_day_date' => today()->addDay(),
+        'latitude' => 40,
+        'longitude' => 70,
+    ]);
+
+    $response = $this->getJson('/api/wedding-list?latitude=0&longitude=0')
+        ->assertOk()
+        ->assertJsonCount(2, 'data.data')
+        ->assertJsonPath('data.data.0.id', $nearWedding->id)
+        ->assertJsonPath('data.data.1.id', $farWedding->id);
+
+    $ids = collect($response->json('data.data'))->pluck('id');
+    expect($ids)->toEqual($ids->unique());
+
+    expect($response->json('data.data.0.distance_km'))
+        ->toBeFloat()
+        ->toBeLessThan($response->json('data.data.1.distance_km'));
+});

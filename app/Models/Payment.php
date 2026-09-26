@@ -23,6 +23,21 @@ class Payment extends Model
         'paid_at' => 'datetime',
     ];
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_SUCCEEDED = 'succeeded';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_PROCESSING,
+        self::STATUS_SUCCEEDED,
+        self::STATUS_FAILED,
+        self::STATUS_CANCELLED
+    ];
+
     public function booking()
     {
         return $this->belongsTo(
