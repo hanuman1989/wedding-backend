@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Resources\WeddingDetailResource;
 use App\Models\Wedding;
 use Illuminate\Http\JsonResponse;
-use App\Http\Resources\WeddingDetailResource;
+use Illuminate\Http\Request;
 
 class WeddingDetailController extends Controller
 {
@@ -18,7 +18,7 @@ class WeddingDetailController extends Controller
                     'creators',
                     'images',
                     'thumbnail',
-                    'days.events'
+                    'days.events',
                 ])
             ),
             'message' => 'Wedding details retrieved successfully.',
@@ -33,7 +33,7 @@ class WeddingDetailController extends Controller
                 $wedding->load([
                     'creators',
                     'images',
-                    'days' => fn($query) => $query
+                    'days' => fn ($query) => $query
                         ->whereDate('wedding_day_date', '>=', today())
                         ->orderBy('wedding_day_date', 'asc')
                         ->orderBy('id', 'asc')

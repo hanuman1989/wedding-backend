@@ -20,6 +20,7 @@ class EnsureUserAuthenticated
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized action.',
+                'error' => 'Unauthenticated',
                 'data' => null,
             ], 403);
         }

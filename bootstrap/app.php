@@ -39,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'status' => false,
                 'message' => 'Unauthorized action',
                 'error' => $exception->getMessage(),
-                'code' => 401,
-            ], 401);
+                'code' => 403,
+            ], 403);
         });
     })->create();
