@@ -15,15 +15,28 @@ class WeddingBookingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $weddingDayTime = $this->days->first()->weddingDay?->wedding_day_time
-            ? Carbon::parse($this->days->first()->weddingDay->wedding_day_time)
+        $firstBookingDay = $this->days->first();
+        $weddingDayTime = $firstBookingDay?->weddingDay?->wedding_day_time
+            ? Carbon::parse($firstBookingDay->weddingDay->wedding_day_time)
             : null;
 
         $bookingDays = $this->days->sortBy(
-            fn($day) => $day->weddingDay?->wedding_day_date
+            fn ($day) => $day->weddingDay?->wedding_day_date
         );
         $firstBookingDate = $bookingDays->first()?->weddingDay?->wedding_day_date?->format('l, d M Y');
         $lastBookingDate = $bookingDays->last()?->weddingDay?->wedding_day_date?->format('l, d M Y');
+
+        $bookingDaysCount = $bookingDays->count();
+        $bookingEventsCount = $bookingDays->sum(
+            fn ($day) => $day->weddingDay?->events?->count() ?? 0
+        );
+        $bookingDaysEventsCount = sprintf(
+            '%d %s %d %s',
+            $bookingDaysCount,
+            $bookingDaysCount === 1 ? 'Day' : 'Days',
+            $bookingEventsCount,
+            $bookingEventsCount === 1 ? 'event' : 'events'
+        );
 
         $bookingDates = $lastBookingDate && $lastBookingDate !== $firstBookingDate
             ? "{$firstBookingDate} - {$lastBookingDate}"
@@ -39,10 +52,11 @@ class WeddingBookingResource extends JsonResource
             'user_id' => $this->user_id,
             'wedding_id' => $this->wedding_id,
             'status' => $this->status,
-            'wedding_booking_date' => $this->days->first()->weddingDay?->wedding_day_date?->format('l, d M Y'),
+            'wedding_booking_date' => $firstBookingDay?->weddingDay?->wedding_day_date?->format('l, d M Y'),
             'wedding_booking_time' => $weddingDayTime?->format('h:i A'),
             'booking_days_dates' => $bookingDates,
             'booking_locations' => $bookingLocations,
+            'booking_days_events_count' => $bookingDaysEventsCount,
             'wedding' => new WeddingDetailResource($this->wedding),
             'user' => [
                 'first_name' => $this->first_name,

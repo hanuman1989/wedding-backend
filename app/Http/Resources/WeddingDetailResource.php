@@ -108,6 +108,18 @@ class WeddingDetailResource extends JsonResource
             default => null,
         };
 
+        $bookingDaysCount = $days->count();
+        $bookingEventsCount = $days->sum(
+            fn ($day) => $day->events?->count() ?? 0
+        );
+        $bookingDaysEventsCount = sprintf(
+            '%d %s %d %s',
+            $bookingDaysCount,
+            $bookingDaysCount === 1 ? 'Day' : 'Days',
+            $bookingEventsCount,
+            $bookingEventsCount === 1 ? 'event' : 'events'
+        );
+
         return [
             'id' => $this->id,
             'wid' => $this->user_id,
@@ -118,13 +130,14 @@ class WeddingDetailResource extends JsonResource
             'groom_name' => $groomName,
             'couple_name' => $coupleName,
             'cover_image' => $coverImage ? asset('storage/'.$coverImage->image) : null,
-            'number_of_days' => $this->number_of_days,
+            'number_of_days' => $bookingDaysCount,
             'food_observance' => $this->food_observance,
             'description' => $this->description,
             'is_alcohol_offered' => $this->is_alcohol_offered,
             'first_wedding_date' => $firstDay?->wedding_day_date?->toDateString(),
             'last_wedding_date' => $lastDay?->wedding_day_date?->toDateString(),
             'wedding_dates' => $weddingDates,
+            'wedding_day_events_count' => $bookingDaysEventsCount,
             'locations' => $locations,
             'state' => $firstDay?->state,
             'images_count' => $this->whenCounted('images'),

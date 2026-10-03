@@ -2,50 +2,161 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\BookingsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BookingIndexRequest;
+use App\Http\Resources\WeddingBookingResource;
+use App\Models\User;
+use App\Models\Wedding;
 use App\Models\WeddingBooking;
+use App\Queries\BookingQuery;
+use App\Services\InvitationPdfService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class AdminBookingController extends Controller
 {
+    public function __construct(
+        private readonly BookingQuery $bookingQuery,
+    ) {}
+
     /**
-     * Display platform-wide booking and platform-fee statistics for the
-     * admin dashboard, i.e. how much is owed to the platform across every
-     * wedding host's bookings.
+     * Display filtered bookings and statistics for the admin.
      */
-    public function stats(Request $request): JsonResponse
+    public function index(BookingIndexRequest $request): JsonResponse
     {
-        $bookingStats = WeddingBooking::query()
-            ->selectRaw('count(*) as bookings_count')
-            ->selectRaw('coalesce(sum(number_of_travelers), 0) as total_travelers')
-            ->selectRaw('coalesce(sum(total_amount), 0) as total_amount')
-            ->first();
+        $filters = $request->validated();
+        $query = $this->bookingQuery->forList($filters);
+        $stats = $this->bookingQuery->stats($filters);
 
-        /*
-         * Only confirmed/completed bookings represent money that has
-         * actually been paid, so the platform fee/payout split is scoped
-         * to those instead of every booking (which may still be pending).
-         */
-        $payoutStats = WeddingBooking::query()
-            ->whereIn('status', [WeddingBooking::STATUS_CONFIRMED, WeddingBooking::STATUS_COMPLETED])
-            ->selectRaw('coalesce(sum(total_amount), 0) as paid_amount')
-            ->selectRaw('coalesce(sum(platform_fee), 0) as platform_fee')
-            ->first();
+        if (isset($filters['limit'])) {
+            $bookings = $query->limit($filters['limit'])->get();
 
-        $totalPlatformFee = (float) $payoutStats->platform_fee;
-        $totalHostPayoutAmount = (float) $payoutStats->paid_amount - $totalPlatformFee;
+            return response()->json([
+                'status' => true,
+                'data' => WeddingBookingResource::collection($bookings),
+                'pagination' => null,
+                'stats' => $stats,
+                'message' => 'Bookings retrieved successfully.',
+            ]);
+        }
+
+        $bookings = $query->paginate($filters['per_page'] ?? 15);
+
+        return response()->json([
+            'status' => true,
+            'data' => WeddingBookingResource::collection($bookings),
+            'pagination' => [
+                'current_page' => $bookings->currentPage(),
+                'last_page' => $bookings->lastPage(),
+                'per_page' => $bookings->perPage(),
+                'total' => $bookings->total(),
+                'from' => $bookings->firstItem(),
+                'to' => $bookings->lastItem(),
+                'next_page_url' => $bookings->nextPageUrl(),
+                'prev_page_url' => $bookings->previousPageUrl(),
+            ],
+            'stats' => $stats,
+            'message' => 'Bookings retrieved successfully.',
+        ]);
+    }
+
+    /**
+     * Export all bookings matching the list filters.
+     */
+    public function export(BookingIndexRequest $request): BinaryFileResponse
+    {
+        $fileName = sprintf('bookings-%s.xlsx', now()->format('Y-m-d_His'));
+
+        return Excel::download(
+            new BookingsExport($this->bookingQuery->forExport($request->validated())),
+            $fileName,
+        );
+    }
+
+    /**
+     * Display the specified booking.
+     */
+    public function show(WeddingBooking $booking): JsonResponse
+    {
+        try {
+            $booking->load([
+                'wedding.images',
+                'wedding.creators',
+                'wedding.days',
+                'wedding.thumbnail',
+                'wedding.days.events',
+                'days.weddingDay',
+                'payment',
+                'days',
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'data' => new WeddingBookingResource($booking),
+                'message' => 'Booking details retrieved successfully.',
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'status' => false,
+                'data' => null,
+                'message' => 'Unable to retrieve booking details. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Display dashboard counts and filtered booking and revenue statistics.
+     */
+    public function stats(BookingIndexRequest $request): JsonResponse
+    {
+        $usersCount = User::query()->count();
+        $hostsCount = User::query()->where('is_host', true)->count();
+
+        $weddingsCount = Wedding::query()->count();
+
+        $bookingStats = $this->bookingQuery->stats($request->validated());
 
         return response()->json([
             'status' => true,
             'data' => [
-                'bookings_count' => (int) $bookingStats->bookings_count,
-                'total_travelers' => (int) $bookingStats->total_travelers,
-                'total_amount' => (float) $bookingStats->total_amount,
-                'total_platform_fee' => $totalPlatformFee,
-                'total_host_payout_amount' => $totalHostPayoutAmount,
+                'users_count' => $usersCount ?? 0,
+                'hosts_count' => $hostsCount ?? 0,
+                'registered_weddings_count' => $weddingsCount,
+                ...$bookingStats,
             ],
             'message' => 'Stats retrieved successfully.',
+        ]);
+    }
+
+    public function download(
+        WeddingBooking $booking,
+        InvitationPdfService $pdfService
+    ) {
+
+        $data = $pdfService->getInvitationData(
+            $booking
+        );
+
+        $pdf = $pdfService->generate($data);
+
+        $filename =
+            'wedding-invitation-'.
+            $booking->id.
+            '.pdf';
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+
+            'Content-Disposition' => 'attachment; filename="'.
+                $filename.
+                '"',
+
+            'Content-Length' => strlen($pdf),
         ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class WeddingListResource extends JsonResource
 {
@@ -30,6 +31,8 @@ class WeddingListResource extends JsonResource
                 ? $firstWeddingDate
                 : $firstWeddingDate.' - '.$lastWeddingDate)
             : null;
+        $totalDays = $this->days->count();
+        $totalEvents = $this->days->sum(fn ($day) => $day->events->count());
         $coupleName = match ($this->creator_type) {
             'other' => $creators->has('bride') && $creators->has('groom')
                 ? trim($creators->get('bride')->first_name.' '.$creators->get('bride')->last_name)
@@ -111,6 +114,8 @@ class WeddingListResource extends JsonResource
             'first_wedding_date' => $firstDay?->wedding_day_date?->toDateString(),
             'last_wedding_date' => $lastDay?->wedding_day_date?->toDateString(),
             'wedding_dates' => $weddingDates,
+            'total_days' => $totalDays.' '.Str::plural('day', $totalDays),
+            'total_events' => $totalEvents.' '.Str::plural('event', $totalEvents),
             'locations' => $locations,
             'state' => $firstDay?->state,
             'distance_km' => $this->distance_km !== null ? round((float) $this->distance_km, 2) : null,

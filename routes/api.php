@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\AdminBookingController;
 use App\Http\Controllers\Admin\AdminUserController;
-use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BookingInvitationCardController;
@@ -33,7 +32,6 @@ Route::post(
     'stripe/webhook',
     [WeddingBookingController::class, 'webhook']
 );
-
 
 Route::middleware(['auth:sanctum', 'user.auth'])->group(function () {
     Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
@@ -114,12 +112,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ], 200);
         });
 
-        // Route::get('me', [AuthController::class, 'me'])->name('me');
-        // Route::post('logout', [AuthController::class, 'logout'])->name('logout');
-
         Route::apiResource('admin-users', AdminUserController::class);
+        Route::put('users-status/{user}', [App\Http\Controllers\Admin\UserController::class, 'updateStatus'])->name('users.status');
+        Route::get('users/export', [App\Http\Controllers\Admin\UserController::class, 'export'])->name('users.export');
+        Route::apiResource('users', App\Http\Controllers\Admin\UserController::class)->only(['index', 'show', 'destroy']);
 
-        Route::get('bookings/stats', [AdminBookingController::class, 'stats'])->name('bookings.stats');
+        Route::get('wedding-bookings/stats', [AdminBookingController::class, 'stats'])->name('admin.bookings.stats');
+
+        Route::get('bookings', [AdminBookingController::class, 'index'])->name('admin.bookings.index');
+        Route::get('bookings/export', [AdminBookingController::class, 'export'])->name('bookings.export');
+        Route::get('bookings/{booking}', [AdminBookingController::class, 'show'])->name('admin.bookings.show');
+        Route::get('weddings/export', [App\Http\Controllers\Admin\WeddingController::class, 'export']);
+
+        Route::get(
+            'weddings',
+            [App\Http\Controllers\Admin\WeddingController::class, 'index']
+        );
+        Route::get('weddings/{wedding}', [App\Http\Controllers\Admin\WeddingController::class, 'show'])->name('admin.weddings.show');
+        Route::delete('weddings/{wedding}', [App\Http\Controllers\Admin\WeddingController::class, 'destroy'])->name('weddings.destroy');
+        Route::get(
+            'bookings/{booking}/invitation/download',
+            [AdminBookingController::class, 'download']
+        )->name('admin.booking.invitation.download');
     });
 });
 

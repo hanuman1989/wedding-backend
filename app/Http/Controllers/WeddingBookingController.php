@@ -12,13 +12,13 @@ use App\Services\InvitationPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Log;
 
 class WeddingBookingController extends Controller
 {
@@ -31,24 +31,23 @@ class WeddingBookingController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        //$isHost = $request->boolean('is_host');
+        // $isHost = $request->boolean('is_host');
 
         $isHost = $request->user()->is_host;
-
 
         $query = WeddingBooking::query()
             ->when(
                 $isHost,
                 // Host view: bookings made on weddings owned by the authenticated user.
-                fn($query) => $query->whereHas(
+                fn ($query) => $query->whereHas(
                     'wedding',
-                    fn($weddingQuery) => $weddingQuery->where('user_id', $request->user()->id)
+                    fn ($weddingQuery) => $weddingQuery->where('user_id', $request->user()->id)
                 ),
-                fn($query) => $query->where('user_id', $request->user()->id)
+                fn ($query) => $query->where('user_id', $request->user()->id)
             )
             ->when(
                 $request->filled('wedding_id'),
-                fn($query) => $query->where('wedding_id', $request->integer('wedding_id'))
+                fn ($query) => $query->where('wedding_id', $request->integer('wedding_id'))
             )
             ->with([
                 'wedding.images',
@@ -109,11 +108,11 @@ class WeddingBookingController extends Controller
         $bookingQuery = WeddingBooking::query()
             ->when(
                 $isHost,
-                fn($query) => $query->whereHas(
+                fn ($query) => $query->whereHas(
                     'wedding',
-                    fn($weddingQuery) => $weddingQuery->where('user_id', $user->id)
+                    fn ($weddingQuery) => $weddingQuery->where('user_id', $user->id)
                 ),
-                fn($query) => $query->where('user_id', $user->id)
+                fn ($query) => $query->where('user_id', $user->id)
             );
 
         $bookingStats = (clone $bookingQuery)
@@ -334,7 +333,6 @@ class WeddingBookingController extends Controller
             ], 403);
         }
 
-
         /*
          * Verify amount and currency against the values calculated by our
          * backend when the booking was created.
@@ -369,6 +367,7 @@ class WeddingBookingController extends Controller
             DB::transaction(function () use ($booking, $payment) {
                 $payment->update([
                     'status' => Payment::STATUS_SUCCEEDED,
+                    'paid_at' => $payment->paid_at ?? now(),
                 ]);
 
                 /*
@@ -392,7 +391,7 @@ class WeddingBookingController extends Controller
                 'payment',
             ]);
 
-            //if ($wasPending) {
+            // if ($wasPending) {
             $this->sendBookingInvoiceEmail($booking, $pdfService);
             // }
 
@@ -651,7 +650,7 @@ class WeddingBookingController extends Controller
          * Do not allow booking an expired day.
          */
         if ($days->contains(
-            fn($day) => $day->wedding_day_date?->isPast() === true
+            fn ($day) => $day->wedding_day_date?->isPast() === true
         )) {
             throw ValidationException::withMessages([
                 'selected_days' => 'One or more selected wedding days have expired.',
@@ -747,7 +746,7 @@ class WeddingBookingController extends Controller
          */
         $booking->days()->createMany(
             $days->map(
-                fn($day) => [
+                fn ($day) => [
                     'wedding_day_id' => $day->id,
                 ]
             )->all()
@@ -763,7 +762,7 @@ class WeddingBookingController extends Controller
     {
         do {
             $number =
-                'IWI-' .
+                'IWI-'.
                 strtoupper(
                     Str::random(10)
                 );
@@ -920,6 +919,7 @@ class WeddingBookingController extends Controller
                      */
                     $payment->update([
                         'status' => Payment::STATUS_SUCCEEDED,
+                        'paid_at' => $payment->paid_at ?? now(),
                     ]);
 
                     $booking->update([
