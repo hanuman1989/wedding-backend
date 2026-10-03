@@ -650,7 +650,7 @@ class WeddingBookingController extends Controller
          * Do not allow booking an expired day.
          */
         if ($days->contains(
-            fn ($day) => $day->wedding_day_date?->isPast() === true
+            fn ($day) => $day->wedding_day_date?->lt(today()) === true
         )) {
             throw ValidationException::withMessages([
                 'selected_days' => 'One or more selected wedding days have expired.',

@@ -15,7 +15,7 @@ class WeddingDayResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $isDayExpired = $this->wedding_day_date?->isPast() ?? false;
+        $isDayExpired = $this->wedding_day_date?->lt(today()) ?? false;
 
         /*
          * wedding_day_time is a raw "time" column string, not a Carbon cast.

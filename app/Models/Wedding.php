@@ -126,7 +126,7 @@ class Wedding extends Model
 
         return $this->days->isNotEmpty()
             && $this->days->every(
-                fn ($day) => $day->wedding_day_date?->isPast()
+                fn ($day) => $day->wedding_day_date?->lt(today())
             );
     }
 }
