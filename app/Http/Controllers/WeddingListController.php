@@ -23,6 +23,7 @@ class WeddingListController extends Controller
             'end_date' => ['sometimes', 'date'],
             'latitude' => ['sometimes', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
+            'food_observance' => ['sometimes', 'nullable', 'string'],
         ]);
 
         $perPage = $request->integer('per_page', 15);
@@ -31,6 +32,7 @@ class WeddingListController extends Controller
         $latitude = isset($validated['latitude']) ? (float) $validated['latitude'] : null;
         $longitude = isset($validated['longitude']) ? (float) $validated['longitude'] : null;
         $hasCoordinates = $latitude !== null && $longitude !== null;
+        $foodObservance = $validated['food_observance'] ?? null;
 
         try {
             $weddings = Wedding::whereHas('days', function (Builder $query) use ($startDate, $endDate): void {
@@ -78,6 +80,9 @@ class WeddingListController extends Controller
                         );
                     }
                 )
+                ->when(filled($foodObservance), function (Builder $query) use ($foodObservance): void {
+                    $query->where('food_observance', $foodObservance);
+                })
                 ->orderBy('id', 'asc')
                 ->paginate($perPage);
 

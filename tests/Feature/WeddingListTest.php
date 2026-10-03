@@ -7,6 +7,29 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+test('wedding list applies food observance only when provided', function (array $filters, int $expectedCount) {
+    $this->freezeTime();
+    foreach (['vegetarian', 'non-vegetarian'] as $observance) {
+        $wedding = Wedding::factory()->create(['food_observance' => $observance]);
+        $day = WeddingDay::factory()->make(['wedding_id' => $wedding->id, 'wedding_day_date' => today()]);
+        unset($day->day_number);
+        $day->save();
+    }
+
+    $response = $this->getJson('/api/wedding-list?'.http_build_query($filters));
+
+    $response->assertOk()->assertJsonCount($expectedCount, 'data')
+        ->assertJsonPath('pagination.total', $expectedCount);
+    if ($expectedCount === 1) {
+        $response->assertJsonPath('data.0.food_observance', 'vegetarian');
+    }
+})->with([
+    'provided' => [['food_observance' => 'vegetarian'], 1],
+    'missing' => [[], 2],
+    'empty' => [['food_observance' => ''], 2],
+    'no match' => [['food_observance' => 'unknown'], 0],
+]);
+
 test('wedding list includes the first and last wedding dates', function () {
     $user = User::factory()->create();
     $wedding = Wedding::factory()->for($user)->create([

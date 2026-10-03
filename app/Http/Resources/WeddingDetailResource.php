@@ -55,7 +55,7 @@ class WeddingDetailResource extends JsonResource
      */
         $isExpired = $days->isNotEmpty()
             && $days->every(
-                fn ($day) => $day->wedding_day_date?->isPast()
+                fn ($day) => $day->wedding_day_date?->lt(today())
             );
 
         /*
