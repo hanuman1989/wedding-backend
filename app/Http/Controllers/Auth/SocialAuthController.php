@@ -84,6 +84,10 @@ class SocialAuthController extends Controller
                         ->first();
                 }
 
+                if ($user && ! $user->status) {
+                    return $user;
+                }
+
                 /*
                  * 3. Create new user
                  */
@@ -117,6 +121,12 @@ class SocialAuthController extends Controller
                 return $user;
             });
 
+            if (! $user->status) {
+                return redirect()->away(
+                    rtrim(config('app.frontend_url'), '/').'/unauthorized'
+                );
+            }
+
             /*
              * Create your existing Sanctum bearer token.
              */
@@ -149,8 +159,8 @@ class SocialAuthController extends Controller
                     config('app.frontend_url'),
                     '/'
                 )
-                    . '/auth/social/callback?code='
-                    . urlencode($rawCode)
+                    .'/auth/social/callback?code='
+                    .urlencode($rawCode)
             );
         } catch (Throwable $exception) {
 
@@ -161,7 +171,7 @@ class SocialAuthController extends Controller
                     config('app.frontend_url'),
                     '/'
                 )
-                    . '/login?social_login=failed'
+                    .'/login?social_login=failed'
             );
         }
     }
@@ -211,6 +221,15 @@ class SocialAuthController extends Controller
         ]);
 
         $user = $loginCode->user;
+
+        if (! $user->status) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized action.',
+                'error' => 'Unauthenticated',
+                'data' => null,
+            ], 403);
+        }
 
         /*
          * Create Sanctum token.
